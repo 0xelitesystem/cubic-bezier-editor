@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cubic Bezier Editor</title>
+<meta name="description" content="A visual CSS cubic-bezier() easing editor with draggable control points, a live animation preview, presets, and a copy button. Runs entirely in your browser.">
+<link rel="canonical" href="https://0xelitesystem.github.io/cubic-bezier-editor/">
+<meta property="og:title" content="Cubic Bezier Editor">
+<meta property="og:description" content="A visual CSS cubic-bezier() easing editor with draggable control points and a live animation preview.">
+<meta property="og:url" content="https://0xelitesystem.github.io/cubic-bezier-editor/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Cubic Bezier Editor","applicationCategory":"DeveloperApplication","operatingSystem":"Any (browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://0xelitesystem.github.io/cubic-bezier-editor/","author":{"@type":"Person","name":"0xelitesystem","url":"https://elitesystem.ai"}}
+</script>
+<style>
+:root {
+  --bg: #fafaf6;
+  --surface: #ffffff;
+  --ink: #0a1d1e;
+  --ink-soft: #2c4a4c;
+  --rule: #c8d4d3;
+  --teal: #0f5c60;
+  --teal-deep: #0a4548;
+  --gold: #b07d2a;
+  --gold-deep: #8a611f;
+  --ok: #1a5c2e;
+  --err: #8b1a1a;
+  --code-bg: #f0ebe1;
+  --curve: #0f5c60;
+  --p1: #b03d8f;
+  --p2: #2660a8;
+  --grid: #d8e0df;
+}
+[data-theme="dark"] {
+  --bg: #0c1c1d;
+  --surface: #14292a;
+  --ink: #e8ebe6;
+  --ink-soft: #b0c0bd;
+  --rule: #2a4042;
+  --teal: #4ab4ba;
+  --teal-deep: #6dc8ce;
+  --gold: #d4a155;
+  --gold-deep: #e6b876;
+  --ok: #6dd380;
+  --err: #e88080;
+  --code-bg: #0a1718;
+  --curve: #4ab4ba;
+  --p1: #d97ab8;
+  --p2: #6da8e0;
+  --grid: #223638;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  line-height: 1.55;
+}
+.wrap { max-width: 1100px; margin: 0 auto; }
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid var(--teal);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+h1 { font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; color: var(--teal); }
+.tag {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.75rem;
+  color: var(--gold-deep);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+[data-theme="dark"] .tag { color: var(--gold); }
+.theme-btn {
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.theme-btn:hover { border-color: var(--teal); color: var(--teal); }
+.lede { font-size: 0.95rem; color: var(--ink-soft); margin-bottom: 1.75rem; max-width: 62ch; }
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 1.25rem;
+  border-radius: 3px;
+}
+.panel-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.85rem; }
+#curve {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+  border-radius: 2px;
+}
+.readout {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 1rem;
+  background: var(--code-bg);
+  padding: 0.85rem;
+  border-radius: 2px;
+  margin-top: 1rem;
+  word-break: break-all;
+}
+.coords { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+.coord label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); display: block; margin-bottom: 0.35rem; }
+.coord input {
+  width: 100%;
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.85rem;
+  border-radius: 2px;
+}
+.coord input:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+.input-row { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; align-items: center; }
+button {
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.6rem 1.1rem;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  border-radius: 2px;
+}
+button:hover { border-color: var(--teal); }
+button.primary {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: var(--surface);
+  font-weight: 600;
+}
+[data-theme="dark"] button.primary { color: var(--bg) !important; }
+button.primary:hover { background: var(--teal-deep); border-color: var(--teal-deep); }
+.copy-note { font-size: 0.78rem; color: var(--ok); }
+.presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.85rem; }
+.preset-btn { font-size: 0.75rem; padding: 0.35rem 0.7rem; font-family: ui-monospace, monospace; }
+.preset-btn.active { border-color: var(--teal); background: var(--code-bg); }
+.preview-track {
+  position: relative;
+  height: 56px;
+  background: var(--code-bg);
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+.preview-dot {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  width: 32px;
+  height: 32px;
+  margin-top: -16px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+.preview-bar {
+  height: 22px;
+  border-radius: 4px;
+  margin-top: 0.75rem;
+  background: var(--gold);
+  width: 12%;
+}
+.preview-controls { display: flex; gap: 0.75rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
+.dur-label { font-size: 0.8rem; color: var(--ink-soft); font-family: ui-monospace, monospace; }
+input[type="range"] { accent-color: var(--teal); }
+.err { color: var(--err); font-size: 0.8rem; margin-top: 0.5rem; min-height: 1rem; }
+footer {
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+footer a { color: var(--teal); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+.privacy-note { font-size: 0.78rem; color: var(--gold-deep); margin-top: 0.85rem; }
+[data-theme="dark"] .privacy-note { color: var(--gold); }
+@media (max-width: 640px) {
+  body { padding: 1rem 0.75rem; }
+  h1 { font-size: 1.4rem; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Cubic Bezier Editor</h1>
+    <div class="tag">Design CSS easing curves</div>
+  </div>
+  <button class="theme-btn" id="theme-toggle" type="button">Dark</button>
+</header>
+
+<p class="lede">Drag the two control points to shape a CSS <code>cubic-bezier()</code> easing curve. Watch a real element animate with it, read the four values, and copy the string. Everything runs locally in your browser.</p>
+
+<div class="grid">
+  <div class="panel">
+    <div class="panel-title">Curve</div>
+    <canvas id="curve" width="400" height="480" aria-label="Editable cubic bezier curve"></canvas>
+    <div class="coords">
+      <div class="coord"><label for="x1">P1 x</label><input type="text" id="x1" inputmode="decimal"></div>
+      <div class="coord"><label for="y1">P1 y</label><input type="text" id="y1" inputmode="decimal"></div>
+      <div class="coord"><label for="x2">P2 x</label><input type="text" id="x2" inputmode="decimal"></div>
+      <div class="coord"><label for="y2">P2 y</label><input type="text" id="y2" inputmode="decimal"></div>
+    </div>
+    <div class="err" id="coord-err"></div>
+    <div class="readout" id="readout">cubic-bezier(0.25, 0.1, 0.25, 1)</div>
+    <div class="input-row">
+      <button class="primary" id="copy-btn" type="button">Copy</button>
+      <span class="copy-note" id="copy-note"></span>
+    </div>
+    <div class="presets" id="presets"></div>
+    <div class="privacy-note">No network calls. This page works fully offline.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Live preview</div>
+    <div class="preview-track"><div class="preview-dot" id="dot"></div></div>
+    <div class="preview-bar" id="bar"></div>
+    <div class="preview-controls">
+      <button id="play-btn" type="button">Replay</button>
+      <label class="dur-label">Duration <input type="range" id="dur" min="300" max="3000" step="100" value="1200"></label>
+      <span class="dur-label" id="dur-val">1200ms</span>
+    </div>
+    <p style="font-size: 0.85rem; color: var(--ink-soft); margin-top: 1.25rem;">
+      The x axis is time (0 to 1), the y axis is progress. Control point coordinates x must stay within 0 and 1; y can go outside that range to create overshoot and anticipation.
+    </p>
+  </div>
+</div>
+
+<footer>
+  <div>Cubic Bezier Editor. Open source, MIT licensed. <a href="https://github.com/0xelitesystem/cubic-bezier-editor" target="_blank" rel="noopener">View source</a>.</div>
+  <div>Real Bezier math, runs offline.</div>
+</footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+// Theme
+const themeBtn = $("theme-toggle");
+function setTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  themeBtn.textContent = t === "dark" ? "Light" : "Dark";
+  draw();
+}
+themeBtn.addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme") || "light";
+  setTheme(cur === "dark" ? "light" : "dark");
+});
+
+// State: control points in bezier space. P0=(0,0), P3=(1,1) fixed.
+let p = { x1: 0.25, y1: 0.1, x2: 0.25, y2: 1.0 };
+
+const canvas = $("curve");
+const ctx = canvas.getContext("2d");
+// Layout: leave vertical margin so overshoot (y outside 0..1) is visible.
+const W = 400, H = 480, PAD = 40;
+const PLOT = W - PAD * 2;            // square plotting area for 0..1 in x and y
+// y range shown: -0.5 to 1.5 so overshoot is visible
+const Y_MIN = -0.5, Y_MAX = 1.5;
+
+function bx(x) { return PAD + x * PLOT; }              // bezier x (0..1) to canvas x
+function by(y) { return PAD + (Y_MAX - y) / (Y_MAX - Y_MIN) * (H - PAD * 2); } // bezier y to canvas y
+function cxToX(cx) { return (cx - PAD) / PLOT; }
+function cyToY(cy) { return Y_MAX - (cy - PAD) / (H - PAD * 2) * (Y_MAX - Y_MIN); }
+
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  const gridC = cssVar("--grid");
+  const ruleC = cssVar("--rule");
+  const curveC = cssVar("--curve");
+  const p1C = cssVar("--p1");
+  const p2C = cssVar("--p2");
+
+  // grid lines at 0, 0.25, 0.5, 0.75, 1
+  ctx.strokeStyle = gridC;
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const v = i / 4;
+    ctx.beginPath(); ctx.moveTo(bx(v), by(Y_MIN)); ctx.lineTo(bx(v), by(Y_MAX)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx(0), by(v)); ctx.lineTo(bx(1), by(v)); ctx.stroke();
+  }
+  // unit box border 0..1
+  ctx.strokeStyle = ruleC;
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(bx(0), by(1), PLOT, by(0) - by(1));
+
+  // handle lines
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = p1C;
+  ctx.beginPath(); ctx.moveTo(bx(0), by(0)); ctx.lineTo(bx(p.x1), by(p.y1)); ctx.stroke();
+  ctx.strokeStyle = p2C;
+  ctx.beginPath(); ctx.moveTo(bx(1), by(1)); ctx.lineTo(bx(p.x2), by(p.y2)); ctx.stroke();
+
+  // the bezier curve via De Casteljau sampling
+  ctx.strokeStyle = curveC;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const t = i / 100;
+    const pt = bezierPoint(t);
+    if (i === 0) ctx.moveTo(bx(pt.x), by(pt.y));
+    else ctx.lineTo(bx(pt.x), by(pt.y));
+  }
+  ctx.stroke();
+
+  // control points
+  drawHandle(bx(p.x1), by(p.y1), p1C);
+  drawHandle(bx(p.x2), by(p.y2), p2C);
+}
+
+function drawHandle(x, y, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = cssVar("--surface");
+  ctx.beginPath();
+  ctx.arc(x, y, 3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// De Casteljau for a cubic with P0=(0,0), P3=(1,1)
+function lerp(a, b, t) { return a + (b - a) * t; }
+function bezierPoint(t) {
+  const p0 = { x: 0, y: 0 }, p1 = { x: p.x1, y: p.y1 }, p2 = { x: p.x2, y: p.y2 }, p3 = { x: 1, y: 1 };
+  const a = { x: lerp(p0.x, p1.x, t), y: lerp(p0.y, p1.y, t) };
+  const b = { x: lerp(p1.x, p2.x, t), y: lerp(p1.y, p2.y, t) };
+  const c = { x: lerp(p2.x, p3.x, t), y: lerp(p2.y, p3.y, t) };
+  const d = { x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) };
+  const e = { x: lerp(b.x, c.x, t), y: lerp(b.y, c.y, t) };
+  return { x: lerp(d.x, e.x, t), y: lerp(d.y, e.y, t) };
+}
+
+/* ---------- dragging ---------- */
+let dragging = null;
+function canvasPos(evt) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width, scaleY = H / rect.height;
+  const cx = (evt.clientX - rect.left) * scaleX;
+  const cy = (evt.clientY - rect.top) * scaleY;
+  return { cx, cy };
+}
+function nearest(cx, cy) {
+  const d1 = Math.hypot(cx - bx(p.x1), cy - by(p.y1));
+  const d2 = Math.hypot(cx - bx(p.x2), cy - by(p.y2));
+  if (Math.min(d1, d2) > 24) return null;
+  return d1 < d2 ? 1 : 2;
+}
+function onDown(evt) {
+  evt.preventDefault();
+  const { cx, cy } = canvasPos(evt);
+  dragging = nearest(cx, cy);
+  if (dragging) { canvas.style.cursor = "grabbing"; onMove(evt); }
+}
+function onMove(evt) {
+  if (!dragging) return;
+  evt.preventDefault();
+  const { cx, cy } = canvasPos(evt);
+  let x = cxToX(cx);
+  let y = cyToY(cy);
+  x = Math.max(0, Math.min(1, x));        // x clamped to 0..1 (CSS requirement)
+  y = Math.max(Y_MIN, Math.min(Y_MAX, y));
+  if (dragging === 1) { p.x1 = round(x); p.y1 = round(y); }
+  else { p.x2 = round(x); p.y2 = round(y); }
+  syncInputs();
+  draw();
+  updateReadout();
+  clearActivePreset();
+}
+function onUp() { dragging = null; canvas.style.cursor = "grab"; }
+function round(v) { return Math.round(v * 1000) / 1000; }
+
+canvas.addEventListener("mousedown", onDown);
+window.addEventListener("mousemove", onMove);
+window.addEventListener("mouseup", onUp);
+canvas.addEventListener("touchstart", (e) => onDown(e.touches[0]), { passive: false });
+canvas.addEventListener("touchmove", (e) => { if (dragging) onMove(e.touches[0]); }, { passive: false });
+canvas.addEventListener("touchend", onUp);
+
+/* ---------- numeric inputs ---------- */
+function syncInputs() {
+  $("x1").value = p.x1; $("y1").value = p.y1; $("x2").value = p.x2; $("y2").value = p.y2;
+}
+function readInputs() {
+  const err = $("coord-err");
+  const vals = {
+    x1: parseFloat($("x1").value), y1: parseFloat($("y1").value),
+    x2: parseFloat($("x2").value), y2: parseFloat($("y2").value)
+  };
+  for (const k of ["x1", "y1", "x2", "y2"]) {
+    if (isNaN(vals[k])) { err.textContent = "Enter a number for " + k + "."; return; }
+  }
+  if (vals.x1 < 0 || vals.x1 > 1 || vals.x2 < 0 || vals.x2 > 1) {
+    err.textContent = "x values must be between 0 and 1 for a valid CSS cubic-bezier.";
+    return;
+  }
+  err.textContent = "";
+  p = { x1: round(vals.x1), y1: round(vals.y1), x2: round(vals.x2), y2: round(vals.y2) };
+  draw(); updateReadout(); clearActivePreset();
+}
+["x1", "y1", "x2", "y2"].forEach((id) => $(id).addEventListener("input", readInputs));
+
+/* ---------- readout, copy ---------- */
+function bezierString() {
+  return "cubic-bezier(" + p.x1 + ", " + p.y1 + ", " + p.x2 + ", " + p.y2 + ")";
+}
+function updateReadout() {
+  $("readout").textContent = bezierString();
+  applyPreview();
+}
+$("copy-btn").addEventListener("click", async () => {
+  const text = bezierString();
+  try {
+    await navigator.clipboard.writeText(text);
+    flashCopy("Copied");
+  } catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); flashCopy("Copied"); }
+    catch (e2) { flashCopy("Copy failed, select manually"); }
+    document.body.removeChild(ta);
+  }
+});
+function flashCopy(msg) {
+  const n = $("copy-note"); n.textContent = msg;
+  setTimeout(() => { n.textContent = ""; }, 1600);
+}
+
+/* ---------- presets ---------- */
+const PRESETS = {
+  "linear": [0, 0, 1, 1],
+  "ease": [0.25, 0.1, 0.25, 1],
+  "ease-in": [0.42, 0, 1, 1],
+  "ease-out": [0, 0, 0.58, 1],
+  "ease-in-out": [0.42, 0, 0.58, 1],
+  "overshoot": [0.34, 1.56, 0.64, 1]
+};
+function buildPresets() {
+  const el = $("presets");
+  Object.keys(PRESETS).forEach((name) => {
+    const b = document.createElement("button");
+    b.className = "preset-btn";
+    b.type = "button";
+    b.textContent = name;
+    b.dataset.name = name;
+    b.addEventListener("click", () => {
+      const v = PRESETS[name];
+      p = { x1: v[0], y1: v[1], x2: v[2], y2: v[3] };
+      syncInputs(); $("coord-err").textContent = ""; draw(); updateReadout();
+      setActivePreset(name);
+    });
+    el.appendChild(b);
+  });
+}
+function setActivePreset(name) {
+  document.querySelectorAll(".preset-btn").forEach((b) => {
+    b.classList.toggle("active", b.dataset.name === name);
+  });
+}
+function clearActivePreset() {
+  document.querySelectorAll(".preset-btn").forEach((b) => b.classList.remove("active"));
+}
+
+/* ---------- preview ---------- */
+let duration = 1200;
+function applyPreview() {
+  const timing = bezierString();
+  const dot = $("dot"), bar = $("bar");
+  [dot, bar].forEach((el) => {
+    el.style.transition = "none";
+    // force reflow
+    void el.offsetWidth;
+  });
+  dot.style.left = "8px";
+  bar.style.width = "12%";
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      dot.style.transition = "left " + duration + "ms " + timing;
+      bar.style.transition = "width " + duration + "ms " + timing;
+      dot.style.left = "calc(100% - 40px)";
+      bar.style.width = "100%";
+    });
+  });
+}
+$("play-btn").addEventListener("click", applyPreview);
+$("dur").addEventListener("input", (e) => {
+  duration = parseInt(e.target.value, 10);
+  $("dur-val").textContent = duration + "ms";
+  applyPreview();
+});
+
+/* ---------- init ---------- */
+const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+buildPresets();
+syncInputs();
+setTheme(prefersDark ? "dark" : "light");
+updateReadout();
+setActivePreset("ease");
+</script>
+</body>
+</html>
